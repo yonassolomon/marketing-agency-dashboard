@@ -1,0 +1,66 @@
+{% extends "agency/base.html" %}
+{% block title %}Dashboard — Agency CRM{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Dashboard</h1>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Total clients</div>
+        <div class="fs-3 fw-semibold">{{ total_clients }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <div class="text-muted small">Total spend this month</div>
+        <div class="fs-3 fw-semibold">${{ month_spend }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 d-flex align-items-end">
+    <a href="{% url 'client_create' %}" class="btn btn-primary w-100">Add New Client</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">Clients</div>
+  <div class="card-body p-0">
+    {% if clients %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th class="text-end">Campaigns</th>
+            <th class="text-end">Pending tasks</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in clients %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td class="text-end">{{ c.campaign_count }}</td>
+            <td class="text-end">{{ c.pending_tasks }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'client_detail' c.pk %}" class="btn btn-sm btn-outline-primary">View Details</a>
+              <a href="{% url 'client_edit' c.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <form action="{% url 'client_delete' c.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this client and all related data?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted p-4 mb-0">No clients yet. Add your first client to get started.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

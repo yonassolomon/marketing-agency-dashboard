@@ -1,0 +1,219 @@
+{% extends "agency/base.html" %}
+{% block title %}{{ client.name }} — Agency CRM{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ client.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">{{ client.name }}</h1>
+  <div>
+    <a href="{% url 'client_edit' client.pk %}" class="btn btn-outline-secondary btn-sm">Edit client</a>
+    <form action="{% url 'client_delete' client.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this client and all related data?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm">Delete client</button>
+    </form>
+  </div>
+</div>
+
+<ul class="nav nav-tabs" id="clientTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="campaigns-tab" data-bs-toggle="tab" data-bs-target="#campaigns-pane" type="button" role="tab">Campaigns</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-pane" type="button" role="tab">Notes</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks-pane" type="button" role="tab">Tasks</button>
+  </li>
+</ul>
+
+<div class="tab-content border border-top-0 rounded-bottom bg-body p-3 shadow-sm mb-4">
+  <div class="tab-pane fade show active" id="campaigns-pane" role="tabpanel">
+    <div class="table-responsive mb-4">
+      <table class="table table-sm align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th class="text-end">Clicks</th>
+            <th class="text-end">Spend ($)</th>
+            <th class="text-end">Conversions</th>
+            <th>Date</th>
+            <th class="text-end" style="width: 6rem;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for camp in campaigns %}
+          <tr>
+            <td>{{ camp.name }}</td>
+            <td class="text-end">{{ camp.clicks }}</td>
+            <td class="text-end">{{ camp.spend }}</td>
+            <td class="text-end">{{ camp.conversions }}</td>
+            <td>{{ camp.date }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'campaign_edit' client.pk camp.pk %}" class="btn btn-link btn-sm p-0 me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+              <form action="{% url 'campaign_delete' client.pk camp.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this campaign?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="Delete"><i class="bi bi-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">No campaigns yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h2 class="h6">Add campaign</h2>
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_campaign">
+      <div class="col-md-3">
+        <label class="form-label small mb-0">Name</label>
+        {{ campaign_form.name }}
+        {% for err in campaign_form.name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-0">Clicks</label>
+        {{ campaign_form.clicks }}
+        {% for err in campaign_form.clicks.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-0">Spend</label>
+        {{ campaign_form.spend }}
+        {% for err in campaign_form.spend.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-0">Conversions</label>
+        {{ campaign_form.conversions }}
+        {% for err in campaign_form.conversions.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary">Add Campaign</button>
+      </div>
+    </form>
+    {% if campaign_form.non_field_errors %}
+      <div class="text-danger small mt-2">{{ campaign_form.non_field_errors }}</div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="notes-pane" role="tabpanel">
+    <ul class="list-group list-group-flush mb-4">
+      {% for note in notes %}
+      <li class="list-group-item d-flex justify-content-between align-items-start gap-3">
+        <div>
+          <div class="small text-muted">{{ note.date }}</div>
+          <div class="mt-1">{{ note.content|linebreaksbr }}</div>
+        </div>
+        <form action="{% url 'note_delete' client.pk note.pk %}" method="post" onsubmit="return confirm('Delete this note?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </li>
+      {% empty %}
+      <li class="list-group-item text-muted">No notes yet.</li>
+      {% endfor %}
+    </ul>
+    <h2 class="h6">Add note</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_note">
+      <div class="mb-2">{{ note_form.content }}</div>
+      {% for err in note_form.content.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      <button type="submit" class="btn btn-primary">Add Note</button>
+    </form>
+  </div>
+
+  <div class="tab-pane fade" id="tasks-pane" role="tabpanel">
+    <div class="table-responsive mb-4">
+      <table class="table table-sm align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 3rem;">Done</th>
+            <th>Description</th>
+            <th>Due date</th>
+            <th class="text-end" style="width: 5rem;">Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr>
+            <td>
+              <input type="checkbox" class="form-check-input task-done-cb" data-url="{% url 'task_toggle' client.pk task.pk %}"
+                     {% if task.is_completed %}checked{% endif %} aria-label="Mark complete">
+            </td>
+            <td>{% if task.is_completed %}<span class="text-decoration-line-through text-muted">{{ task.description }}</span>{% else %}{{ task.description }}{% endif %}</td>
+            <td>{{ task.due_date }}</td>
+            <td class="text-end">
+              <form action="{% url 'task_delete' client.pk task.pk %}" method="post" class="d-inline" onsubmit="return confirm('Delete this task?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted">No tasks yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <h2 class="h6">Add task</h2>
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_task">
+      <div class="col-md-6">
+        <label class="form-label small mb-0">Description</label>
+        {{ task_form.description }}
+        {% for err in task_form.description.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-0">Due date</label>
+        {{ task_form.due_date }}
+        {% for err in task_form.due_date.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary">Add Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (!meta) return;
+  const csrf = meta.getAttribute('content');
+  document.querySelectorAll('.task-done-cb').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      const url = cb.getAttribute('data-url');
+      const want = cb.checked;
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf
+        },
+        body: JSON.stringify({ is_completed: want })
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('Request failed');
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data.ok) throw new Error('Bad response');
+          window.location.reload();
+        })
+        .catch(function () {
+          cb.checked = !want;
+          alert('Could not update task. Try again.');
+        });
+    });
+  });
+})();
+</script>
+{% endblock %}
