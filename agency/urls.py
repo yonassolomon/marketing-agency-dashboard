@@ -8,6 +8,7 @@ urlpatterns = [
     path("login/", views.AgencyLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("", views.dashboard, name="dashboard"),
+    path("users/", views.user_management, name="user_management"),
     path("clients/add/", views.client_create, name="client_create"),
     path("clients/<int:pk>/", views.client_detail, name="client_detail"),
     path("clients/<int:pk>/edit/", views.client_edit, name="client_edit"),

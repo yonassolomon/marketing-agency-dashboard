@@ -1,0 +1,92 @@
+{% extends "agency/base.html" %}
+{% block title %}Manage Users — Agency CRM{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Manage Users</h1>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Create user</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_user">
+          {% for field in create_form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-primary w-100">Create User</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header">Existing users</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Username</th>
+                <th class="text-center">Admin</th>
+                <th class="text-center">Active</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for managed_user in users %}
+              <tr>
+                <td>{{ managed_user.username }}</td>
+                <td class="text-center">
+                  {% if managed_user.is_staff %}
+                  <span class="badge text-bg-success">Yes</span>
+                  {% else %}
+                  <span class="badge text-bg-secondary">No</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if managed_user.is_active %}
+                  <span class="badge text-bg-success">Yes</span>
+                  {% else %}
+                  <span class="badge text-bg-danger">No</span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_staff">
+                    <input type="hidden" name="user_id" value="{{ managed_user.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                      {% if managed_user.is_staff %}Remove Admin{% else %}Make Admin{% endif %}
+                    </button>
+                  </form>
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <input type="hidden" name="user_id" value="{{ managed_user.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                      {% if managed_user.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">No users found.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

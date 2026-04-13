@@ -52,6 +52,7 @@ Django 4.x app with username/password auth, SQLite, and per-user data for client
 | `/register/` | New account |
 | `/login/` | Login |
 | `/logout/` | Logout (POST) |
+| `/users/` | Staff-only user management |
 | `/clients/add/` | New client |
 | `/clients/<id>/` | Client detail (campaigns, notes, tasks) |
 

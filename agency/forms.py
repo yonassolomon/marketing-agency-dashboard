@@ -24,6 +24,30 @@ class RegisterForm(UserCreationForm):
             field.widget.attrs["class"] = (css + " form-control").strip()
 
 
+class AdminUserCreateForm(UserCreationForm):
+    is_staff = forms.BooleanField(required=False, label="Admin access")
+
+    class Meta:
+        model = User
+        fields = ("username", "password1", "password2", "is_staff")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            css = field.widget.attrs.get("class", "")
+            if name == "is_staff":
+                field.widget.attrs["class"] = (css + " form-check-input").strip()
+            else:
+                field.widget.attrs["class"] = (css + " form-control").strip()
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_staff = self.cleaned_data.get("is_staff", False)
+        if commit:
+            user.save()
+        return user
+
+
 class ClientForm(forms.ModelForm):
     class Meta:
         model = Client

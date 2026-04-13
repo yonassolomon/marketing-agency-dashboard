@@ -2,7 +2,8 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
@@ -12,6 +13,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
     AgencyAuthenticationForm,
+    AdminUserCreateForm,
     CampaignForm,
     ClientForm,
     NoteForm,
@@ -19,6 +21,10 @@ from .forms import (
     TaskForm,
 )
 from .models import Campaign, Client, Note, Task
+
+
+def _is_admin_user(user):
+    return user.is_authenticated and user.is_staff
 
 
 def register(request):
@@ -237,3 +243,49 @@ def task_toggle(request, pk, task_id):
     task.is_completed = not task.is_completed
     task.save(update_fields=["is_completed"])
     return redirect("client_detail", pk=pk)
+
+
+@login_required
+@user_passes_test(_is_admin_user)
+def user_management(request):
+    create_form = AdminUserCreateForm()
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        user_id = request.POST.get("user_id")
+
+        if action == "create_user":
+            create_form = AdminUserCreateForm(request.POST)
+            if create_form.is_valid():
+                user = create_form.save()
+                messages.success(request, f"User '{user.username}' created successfully.")
+                return redirect("user_management")
+        elif action in {"toggle_staff", "toggle_active"} and user_id:
+            target_user = get_object_or_404(User, pk=user_id)
+            if target_user == request.user and action == "toggle_staff":
+                messages.error(request, "You cannot remove your own admin access.")
+                return redirect("user_management")
+            if target_user == request.user and action == "toggle_active":
+                messages.error(request, "You cannot deactivate your own account.")
+                return redirect("user_management")
+            if action == "toggle_staff":
+                target_user.is_staff = not target_user.is_staff
+                target_user.save(update_fields=["is_staff"])
+                state = "granted" if target_user.is_staff else "removed"
+                messages.success(
+                    request,
+                    f"Admin access {state} for '{target_user.username}'.",
+                )
+            else:
+                target_user.is_active = not target_user.is_active
+                target_user.save(update_fields=["is_active"])
+                state = "activated" if target_user.is_active else "deactivated"
+                messages.success(request, f"User '{target_user.username}' {state}.")
+            return redirect("user_management")
+
+    users = User.objects.order_by("username")
+    return render(
+        request,
+        "agency/user_management.html",
+        {"users": users, "create_form": create_form},
+    )

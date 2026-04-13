@@ -24,6 +24,9 @@
       <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
         {% if user.is_authenticated %}
         <a class="nav-link py-1" href="{% url 'dashboard' %}">Dashboard</a>
+        {% if user.is_staff %}
+        <a class="nav-link py-1" href="{% url 'user_management' %}">Manage Users</a>
+        {% endif %}
         <span class="text-secondary d-none d-sm-inline">|</span>
         <span class="navbar-text small">{{ user.username }}</span>
         <form action="{% url 'logout' %}" method="post" class="d-inline">
