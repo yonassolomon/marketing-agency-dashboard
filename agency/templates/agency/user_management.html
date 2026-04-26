@@ -35,24 +35,46 @@
             <thead class="table-light">
               <tr>
                 <th>Username</th>
+                <th class="text-center">Activity</th>
                 <th class="text-center">Admin</th>
                 <th class="text-center">Active</th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {% for managed_user in users %}
+              {% for item in users %}
               <tr>
-                <td>{{ managed_user.username }}</td>
+                <td>
+                  <div class="fw-semibold">{{ item.user.username }}</div>
+                  <div class="small text-body-secondary">
+                    {% if item.last_activity %}
+                    Last activity: {{ item.last_activity }}
+                    {% else %}
+                    No activity yet
+                    {% endif %}
+                  </div>
+                </td>
                 <td class="text-center">
-                  {% if managed_user.is_staff %}
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#user-activity-{{ item.user.id }}"
+                    aria-expanded="false"
+                    aria-controls="user-activity-{{ item.user.id }}"
+                  >
+                    View Activity
+                  </button>
+                </td>
+                <td class="text-center">
+                  {% if item.user.is_staff %}
                   <span class="badge text-bg-success">Yes</span>
                   {% else %}
                   <span class="badge text-bg-secondary">No</span>
                   {% endif %}
                 </td>
                 <td class="text-center">
-                  {% if managed_user.is_active %}
+                  {% if item.user.is_active %}
                   <span class="badge text-bg-success">Yes</span>
                   {% else %}
                   <span class="badge text-bg-danger">No</span>
@@ -62,24 +84,121 @@
                   <form method="post" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="toggle_staff">
-                    <input type="hidden" name="user_id" value="{{ managed_user.id }}">
+                    <input type="hidden" name="user_id" value="{{ item.user.id }}">
                     <button type="submit" class="btn btn-sm btn-outline-primary">
-                      {% if managed_user.is_staff %}Remove Admin{% else %}Make Admin{% endif %}
+                      {% if item.user.is_staff %}Remove Admin{% else %}Make Admin{% endif %}
                     </button>
                   </form>
                   <form method="post" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="toggle_active">
-                    <input type="hidden" name="user_id" value="{{ managed_user.id }}">
+                    <input type="hidden" name="user_id" value="{{ item.user.id }}">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
-                      {% if managed_user.is_active %}Deactivate{% else %}Activate{% endif %}
+                      {% if item.user.is_active %}Deactivate{% else %}Activate{% endif %}
                     </button>
                   </form>
                 </td>
               </tr>
+              <tr class="collapse bg-body-tertiary" id="user-activity-{{ item.user.id }}">
+                <td colspan="5">
+                  <div class="p-3">
+                    <div class="row g-3 mb-3">
+                      <div class="col-sm-6 col-xl-2">
+                        <div class="border rounded p-2 h-100">
+                          <div class="small text-body-secondary">Clients</div>
+                          <div class="fs-5 fw-semibold">{{ item.user.client_count }}</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6 col-xl-2">
+                        <div class="border rounded p-2 h-100">
+                          <div class="small text-body-secondary">Campaigns</div>
+                          <div class="fs-5 fw-semibold">{{ item.user.campaign_count }}</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6 col-xl-2">
+                        <div class="border rounded p-2 h-100">
+                          <div class="small text-body-secondary">Notes</div>
+                          <div class="fs-5 fw-semibold">{{ item.user.note_count }}</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6 col-xl-2">
+                        <div class="border rounded p-2 h-100">
+                          <div class="small text-body-secondary">Tasks</div>
+                          <div class="fs-5 fw-semibold">{{ item.user.task_count }}</div>
+                        </div>
+                      </div>
+                      <div class="col-sm-6 col-xl-2">
+                        <div class="border rounded p-2 h-100">
+                          <div class="small text-body-secondary">Pending Tasks</div>
+                          <div class="fs-5 fw-semibold">{{ item.user.pending_task_count }}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row g-3">
+                      <div class="col-lg-3">
+                        <h2 class="h6">Recent Clients</h2>
+                        <ul class="list-group list-group-flush border rounded">
+                          {% for client in item.recent_clients %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">{{ client.name }}</div>
+                            <div class="small text-body-secondary">{{ client.created_at }}</div>
+                          </li>
+                          {% empty %}
+                          <li class="list-group-item text-body-secondary">No clients yet.</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                      <div class="col-lg-3">
+                        <h2 class="h6">Recent Campaigns</h2>
+                        <ul class="list-group list-group-flush border rounded">
+                          {% for campaign in item.recent_campaigns %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">{{ campaign.name }}</div>
+                            <div class="small text-body-secondary">{{ campaign.client.name }} · {{ campaign.date }}</div>
+                          </li>
+                          {% empty %}
+                          <li class="list-group-item text-body-secondary">No campaigns yet.</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                      <div class="col-lg-3">
+                        <h2 class="h6">Recent Notes</h2>
+                        <ul class="list-group list-group-flush border rounded">
+                          {% for note in item.recent_notes %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">{{ note.client.name }}</div>
+                            <div class="small">{{ note.content|truncatechars:80 }}</div>
+                            <div class="small text-body-secondary">{{ note.date }}</div>
+                          </li>
+                          {% empty %}
+                          <li class="list-group-item text-body-secondary">No notes yet.</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                      <div class="col-lg-3">
+                        <h2 class="h6">Recent Tasks</h2>
+                        <ul class="list-group list-group-flush border rounded">
+                          {% for task in item.recent_tasks %}
+                          <li class="list-group-item">
+                            <div class="fw-semibold">{{ task.description }}</div>
+                            <div class="small text-body-secondary">
+                              {{ task.client.name }} · Due {{ task.due_date }}
+                              {% if task.is_completed %}· Completed{% else %}· Open{% endif %}
+                            </div>
+                          </li>
+                          {% empty %}
+                          <li class="list-group-item text-body-secondary">No tasks yet.</li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
               {% empty %}
               <tr>
-                <td colspan="4" class="text-center text-muted py-4">No users found.</td>
+                <td colspan="5" class="text-center text-muted py-4">No users found.</td>
               </tr>
               {% endfor %}
             </tbody>

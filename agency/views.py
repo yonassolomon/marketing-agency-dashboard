@@ -27,6 +27,33 @@ def _is_admin_user(user):
     return user.is_authenticated and user.is_staff
 
 
+def _recent_user_activity(user):
+    recent_clients = list(user.clients.order_by("-created_at", "-id")[:3])
+    recent_campaigns = list(user.campaigns.select_related("client").order_by("-date", "-id")[:3])
+    recent_notes = list(user.notes.select_related("client").order_by("-date", "-id")[:3])
+    recent_tasks = list(user.tasks.select_related("client").order_by("-due_date", "-id")[:3])
+
+    dated_items = []
+    for client in recent_clients:
+        dated_items.append(("client", client.created_at.date(), client.created_at))
+    for campaign in recent_campaigns:
+        dated_items.append(("campaign", campaign.date, campaign.date))
+    for note in recent_notes:
+        dated_items.append(("note", note.date, note.date))
+    for task in recent_tasks:
+        dated_items.append(("task", task.due_date, task.due_date))
+
+    last_activity = max(dated_items, key=lambda item: item[1]) if dated_items else None
+
+    return {
+        "recent_clients": recent_clients,
+        "recent_campaigns": recent_campaigns,
+        "recent_notes": recent_notes,
+        "recent_tasks": recent_tasks,
+        "last_activity": last_activity[2] if last_activity else None,
+    }
+
+
 def register(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -283,9 +310,29 @@ def user_management(request):
                 messages.success(request, f"User '{target_user.username}' {state}.")
             return redirect("user_management")
 
-    users = User.objects.order_by("username")
+    users = (
+        User.objects.annotate(
+            client_count=Count("clients", distinct=True),
+            campaign_count=Count("campaigns", distinct=True),
+            note_count=Count("notes", distinct=True),
+            task_count=Count("tasks", distinct=True),
+            pending_task_count=Count("tasks", filter=Q(tasks__is_completed=False), distinct=True),
+        )
+        .order_by("username")
+    )
+
+    user_activity = []
+    for managed_user in users:
+        activity = _recent_user_activity(managed_user)
+        user_activity.append(
+            {
+                "user": managed_user,
+                **activity,
+            }
+        )
+
     return render(
         request,
         "agency/user_management.html",
-        {"users": users, "create_form": create_form},
+        {"users": user_activity, "create_form": create_form},
     )
